@@ -1,0 +1,29 @@
+@startuml
+skinparam responseMessageBelowArrow true
+participant 浏览器 as browser
+participant 缓存 as cache
+participant Web服务器 as server
+-> browser: 发起HTTP请求
+browser -> cache: GET /index HTTP/1.1
+cache ---> cache: /index.html
+note over cache: 缓存是空的，继续请求Web服务器
+cache -> server: GET /index HTTP/1.1
+server -> cache: HTTP/1.1 200 OK \n Cache-Control:Max-age=2000
+note over cache: 缓存本地
+cache -> browser: HTTP/1.1 200 OK \n Cache-Control:Max-age=2000 \n Age:0
+...1000秒后再次请求...
+-> browser: 发起HTTP请求
+browser -> cache: GET /index HTTP/1.1
+cache --> cache: /index.html \n Max-age=2000 \n Age=1000
+note over cache: 缓存在生存期内
+cache -> browser: HTTP/1.1 200 OK \n Cache-Control:Max-age=2000 \n Aget: 1000
+... 2100秒后再次请求 ...
+-> browser: 发起HTTP请求
+browser -> cache: GET /index HTTP/1.1
+cache --> cache: /index.html \n Max-age=2000 \n Age:2100
+note over cache: 缓存过期，请求Web服务器
+cache -> server: GET /index HTTP/1.1 \n If-None-Match
+server -> cache: HTTP/1.1 304 Not Modified
+note over cache: 服务器返回304，缓存内容没有改动，继续刷新缓存新鲜度
+cache -> browser: HTTP/1.1 304 Not Modified \n Cache-Control:Max-age=2000 \n Age:0
+@enduml
